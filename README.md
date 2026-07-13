@@ -1,0 +1,3 @@
+Created mongo shard cluster with primary and secondary replica-sets
+connection test using GO. 
+shards tests are pending .....
