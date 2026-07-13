@@ -52,8 +52,8 @@ jobs:
         run: |
           docker exec  shard2 mongosh --port 27018 --eval " rs.initiate({  _id: 'shard2ReplSet',members: [ { _id: 0, host: 'shard2:27018' },{ _id: 1, host: 'shard2_secondary:27019' }] }); rs.status();"
 
-      - name restart mongos router
-    run: |
+      - name: restart mongos router
+        run: |
          docker restart mongos
          echo "Waiting for mongos to come back up..."
          sleep 10
