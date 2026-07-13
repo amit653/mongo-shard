@@ -71,8 +71,6 @@ jobs:
         run: |
           docker exec mongos  mongosh --port 27017 --eval "db.adminCommand('ping'); sh.status();"
 
-      - name: Run tests
-        run: echo "Add integration tests here"
 
       - name: Tear down
         if: always()
