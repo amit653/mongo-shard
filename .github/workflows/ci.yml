@@ -52,10 +52,13 @@ jobs:
         run: |
           docker exec  shard2 mongosh --port 27018 --eval " rs.initiate({  _id: 'shard2ReplSet',members: [ { _id: 0, host: 'shard2:27018' },{ _id: 1, host: 'shard2_secondary:27019' }] }); rs.status();"
 
+      - name: Added shards details in mongos
+        run: |
+          docker exec mongos mongosh --port 27017 eval " sh.addShard('shard1ReplSet/shard1:27018,shard1_secondary:27019'); sh.addShard('shard2ReplSet/shard2:27018,shard2_secondary:27019');"
+
       - name: Verify mongos router
         run: |
-          docker exec mongos \
-            mongo --port 27017 --eval "db.adminCommand('ping')"
+          docker exec mongos  mongo --port 27017 --eval "db.adminCommand('ping')"
 
       - name: Run tests
         run: echo "Add your integration tests here"
