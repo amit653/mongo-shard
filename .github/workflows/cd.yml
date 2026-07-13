@@ -11,18 +11,71 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     environment:
-      name: production
+      name: test
     steps:
       - uses: actions/checkout@v3
 
       - name: Set up Docker
         uses: docker/setup-buildx-action@v2
 
-      - name: Deploy MongoDB cluster
+      - name: Install docker-compose
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y docker-compose
+       
+      - name: Start MongoDB cluster
         run: docker-compose -f docker-compose.yml up -d
+
+      - name: Wait for container to be up
+        run: sleep 40
+
+      - name: display docker ps
+        run: docker-compose ps
+
+      - name: Initiate config server replica set
+        run: |
+         docker exec configsvr1 mongosh --port 27019 --eval "
+         rs.initiate({
+         _id: 'configReplSet',
+         configsvr: true,
+         members: [
+          { _id: 0, host: 'configsvr1:27019' },
+          { _id: 1, host: 'configsvr2:27019' }
+         ]
+         });
+         rs.status();
+         "
+
+      - name: Add replicaset for shard1
+        run: |
+          echo "command- rs.initiate({ _id: 'shard1ReplSet',members:[{ _id: 0, host: 'shard1:27018' },{ _id: 1, host: 'shard1_secondary:27019' }] }); rs.status();"
+          docker exec  shard1 mongosh --port 27018  --eval " rs.initiate({ _id: 'shard1ReplSet',members:[{ _id: 0, host: 'shard1:27018' },{ _id: 1, host: 'shard1_secondary:27019' }] }); rs.status();"
+            
+
+      - name: Add replicaset for shard2
+        run: |
+          docker exec  shard2 mongosh --port 27018 --eval " rs.initiate({  _id: 'shard2ReplSet',members: [ { _id: 0, host: 'shard2:27018' },{ _id: 1, host: 'shard2_secondary:27019' }] }); rs.status();"
+
+      - name: restart mongos router
+        run: |
+         docker restart mongos
+         echo "Waiting for mongos to come back up..."
+         sleep 10
+         docker exec mongos mongosh --port 27017 --eval "db.adminCommand('ping')"
+
+      - name: Added shards details in mongos
+        run: |
+          docker exec mongos mongosh --port 27017 --eval " sh.addShard('shard1ReplSet/shard1:27018,shard1_secondary:27019'); sh.addShard('shard2ReplSet/shard2:27018,shard2_secondary:27019');"
 
       - name: Verify mongos router
         run: |
-          docker exec mongos \
-            mongo --port 27017 --eval "db.adminCommand('ping')"
+          docker exec mongos  mongosh --port 27017 --eval "db.adminCommand('ping'); sh.status();"
+
+      - name: Run tests
+        run: echo "Add integration tests here"
+
+      - name: Tear down
+        if: always()
+        run: docker-compose -f docker-compose.yml down
+
 
