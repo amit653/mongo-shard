@@ -54,7 +54,7 @@ jobs:
 
       - name: Added shards details in mongos
         run: |
-          docker exec mongos mongosh --port 27017 eval " sh.addShard('shard1ReplSet/shard1:27018,shard1_secondary:27019'); sh.addShard('shard2ReplSet/shard2:27018,shard2_secondary:27019');"
+          docker exec mongos mongosh --port 27017 --eval " sh.addShard('shard1ReplSet/shard1:27018,shard1_secondary:27019'); sh.addShard('shard2ReplSet/shard2:27018,shard2_secondary:27019');"
 
       - name: Verify mongos router
         run: |
