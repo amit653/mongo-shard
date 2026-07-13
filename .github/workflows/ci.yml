@@ -55,7 +55,7 @@ jobs:
         rs.status();
         " 
   
-    - name: Add replicaset for shard2
+      - name: Add replicaset for shard2
         run: |
           docker exec  shard2 mongosh --port 27018 --eval
           "
