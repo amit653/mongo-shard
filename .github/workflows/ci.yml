@@ -18,9 +18,26 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y docker-compose
-
+       
       - name: Start MongoDB cluster
         run: docker-compose -f docker-compose.yml up -d
+
+      - name: Wait for config servers
+        run: sleep 10
+
+      - name: Initiate config server replica set
+        run: |
+         docker exec configsvr1 mongosh --port 27019 --eval '
+         rs.initiate({
+        _id: "configReplSet",
+        configsvr: true,
+        members: [
+          { _id: 0, host: "configsvr1:27019" },
+          { _id: 1, host: "configsvr2:27019" }
+        ]
+        });
+       rs.status();
+        '
 
       - name: Verify mongos router
         run: |
