@@ -65,7 +65,7 @@ jobs:
 
       - name: Verify mongos router
         run: |
-          docker exec mongos  mongo --port 27017 --eval "db.adminCommand('ping')"
+          docker exec mongos  mongosh --port 27017 --eval "db.adminCommand('ping'); sh.status();"
 
       - name: Run tests
         run: echo "Add your integration tests here"
