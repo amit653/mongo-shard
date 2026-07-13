@@ -22,18 +22,21 @@ jobs:
       - name: Start MongoDB cluster
         run: docker-compose -f docker-compose.yml up -d
 
-      - name: Wait for config servers
-        run: sleep 10
+      - name: Wait for container to be up
+        run: sleep 40
+
+      - name: display docker ps
+        run: docker-compose ps
 
       - name: Initiate config server replica set
         run: |
          docker exec configsvr1 mongosh --port 27019 --eval "
          rs.initiate({
-         _id: "configReplSet",
+         _id: 'configReplSet',
          configsvr: true,
          members: [
-          { _id: 0, host: "configsvr1:27019" },
-          { _id: 1, host: "configsvr2:27019" }
+          { _id: 0, host: 'configsvr1:27019' },
+          { _id: 1, host: 'configsvr2:27019' }
          ]
          });
          rs.status();
