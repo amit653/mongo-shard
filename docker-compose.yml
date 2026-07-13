@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # Config Servers
+  configsvr1:
+    image: mongo:7.0.14
+    container_name: configsvr1
+    command: mongod --configsvr --replSet configReplSet --port 27019 --wiredTigerCacheSizeGB 0.25
+    ports:
+      - "27019:27019"
+    volumes:  #  manual defined storage  by default created ls /data/configsrv1
+      - ./data/configsvr1:/data/db
+
+  configsvr2:
+    image: mongo:7.0.14
+    container_name: configsvr2
+    command: mongod --configsvr --replSet configReplSet --port 27019 --wiredTigerCacheSizeGB 0.25
+    ports:
+      - "27023:27019"
+    volumes:
+      - ./data/configsvr2:/data/db
+
+  # Shard Servers (Replica Sets) shard1 prim
+  shard1:
+    image: mongo:7.0.14
+    container_name: shard1
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27018 --wiredTigerCacheSizeGB 0.25
+    ports:
+      - "27018:27018"
+    volumes:  # docker  mgd
+      - shard1_data:/data/db
+
+  # Shard1 Secondary
+  shard1_secondary:
+    image: mongo:7.0.14
+    container_name: shard1_secondary
+    command: mongod --shardsvr --replSet shard1ReplSet --port 27019 --wiredTigerCacheSizeGB 0.25
+    ports:
+      - "27021:27019"
+    volumes:
+      - shard1_secondary_data:/data/db
+ 
+  # shard2 primary      
+  shard2:
+    image: mongo:7.0.14
+    container_name: shard2
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27018 --wiredTigerCacheSizeGB 0.25
+    ports:
+      - "27020:27018"   # hostport:containerport
+    volumes: # docker mgd volume
+      - shard2_data:/data/db
+
+  # shard2 secondary
+  shard2_secondary:
+    image: mongo:7.0.14
+    container_name: shard2_secondary
+    command: mongod --shardsvr --replSet shard2ReplSet --port 27019 --wiredTigerCacheSizeGB 0.25
+    ports:
+      - "27022:27019"
+    volumes:
+      - shard2_secondary_data:/data/db
+
+  # Mongos Router
+  mongos:
+    image: mongo:7.0.14
+    container_name: mongos
+    command: >
+      mongos --configdb configReplSet/configsvr1:27019,configsvr2:27019  --bind_ip_all --port 27017 
+    ports:
+      - "27017:27017"
+    depends_on:
+      - configsvr1
+      - configsvr2
+      - shard1
+      - shard1_secondary
+      - shard2
+      - shard2_secondary
+volumes:
+  shard1_data:
+  shard1_secondary_data:
+  shard2_data:
+  shard2_secondary_data:
